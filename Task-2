@@ -1,0 +1,58 @@
+import smtplib
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
+from email.mime.base import MIMEBase
+from email import encoders
+import csv
+
+def send_email(user_details, attachment_path):
+    """Sends an email with attachment, personalized with user details."""
+
+    from_address = "your_email@example.com"  # Replace with your email
+    from_password = "your_password"  # Replace with your password (or use environment variables)
+
+    message = MIMEMultipart()
+    message["From"] = from_address
+    message["To"] = user_details["email"]
+    message["Subject"] = "Your Subject Here"  # Customize subject
+
+    # Personalize the email body
+    body = f"""
+    Dear {user_details['name']},
+
+    This is an automated email with your attachment.
+
+    Sincerely,
+    Your Name
+    """
+    message.attach(MIMEText(body, "plain"))
+
+    # Attach the file
+    if attachment_path:
+        attach_file = open(attachment_path, "rb")
+        payload = MIMEBase("application", "octet-stream")
+        payload.set_payload((attach_file).read())
+        encoders.encode_base64(payload)
+        payload.add_header("Content-Disposition", "attachment; filename= %s" % attachment_path.split("/")[-1])
+        message.attach(payload)
+
+    # Connect to SMTP server and send email
+    with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:  # Use Gmail's SMTP
+        server.login(from_address, from_password)
+        server.sendmail(from_address, user_details["email"], message.as_string())
+
+# --- Main script ---
+if __name__ == "__main__":
+    csv_file_path = "user_data.csv"  # Replace with your CSV file path
+    attachment_file_path = "path/to/your/attachment.pdf"  # Replace with your attachment path (or None for no attachment)
+
+    with open(csv_file_path, "r") as file:
+        reader = csv.DictReader(file)
+        for row in reader:
+            send_email(row, attachment_file_path)
+            print(f"Email sent to {row['name']}")
+
+CSV File Format (user_data.csv):
+name,email
+John Doe,john.doe@example.com
+Jane Smith,jane.smith@example.com
