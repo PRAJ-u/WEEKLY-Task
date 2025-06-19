@@ -1,0 +1,58 @@
+lgbm.fitX_train, X_test, y_train, y_test = train_test_split(X, y, test_size = 0.4, random_state=2, stratify=y)
+
+# Instantiate the LGBM
+lgbm = LGBMClassifier()
+
+# Fit the classifier to the training data
+lgbm.fit(X_train, y_train)
+
+# Perform prediction
+y_pred = lgbm.predict(X_test)
+
+# Print the accuracy
+print(lgbm.score(X_test, y_test))
+
+print(classification_report(y_test, y_pred))
+print(confusion_matrix(y_test, y_pred))steps = [('scaler', StandardScaler()),
+         ('lgbm', LGBMClassifier())]
+
+pipeline = Pipeline(steps)
+
+# Specify the hyperparameter space
+parameters = {
+    'lgbm__learning_rate':[0.03, 0.05, 0.1],
+    'lgbm__objective':['binary'],
+    'lgbm__metric':['binary_logloss'],
+    'lgbm__max_depth':[10],
+    'lgbm__n_estimators':[100, 200, 300]
+}lgbm.get_params()cv.fit# Setup the pipeline
+steps = [('scaler', StandardScaler()),
+         ('lgbm', LGBMClassifier())]
+
+pipeline = Pipeline(steps)
+
+# Specify the hyperparameter space
+parameters = {
+    'lgbm__learning_rate':[0.03, 0.05, 0.1],
+    'lgbm__objective':['binary'],
+    'lgbm__metric':['binary_logloss'],
+    'lgbm__max_depth':[10],
+    'lgbm__n_estimators':[100, 200, 300]
+}
+
+# Create train and test sets
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42)
+
+# Instantiate the GridSearchCV object
+cv = GridSearchCV(pipeline, parameters, cv=3)
+
+# Fit to the training set
+cv.fit(X_train, y_train)
+
+# Predict the labels of the test set
+y_pred = cv.predict(X_test)print(f'Best score : {cv.best_score_}')
+print(f'Best params : {cv.best_params_}')
+
+# Compute and print metrics
+print("Accuracy: {}".format(cv.score(X_test, y_test)))
+print(classification_report(y_test, y_pred))
