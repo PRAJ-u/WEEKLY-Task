@@ -1,58 +1,42 @@
-lgbm.fitX_train, X_test, y_train, y_test = train_test_split(X, y, test_size = 0.4, random_state=2, stratify=y)
+# Import all the necessary libraries
+import pandas as pd
+import numpy as np
+import joblib
+import pickle
+import streamlit as st
 
-# Instantiate the LGBM
-lgbm = LGBMClassifier()
+# Load the model and structure
+model = joblib.load("pollution_model.pkl")
+model_cols = joblib.load("model_columns.pkl")
 
-# Fit the classifier to the training data
-lgbm.fit(X_train, y_train)
+# Let's create an User interface
+st.title("Water Pollutants Predictor")
+st.write("Predict the water pollutants based on Year and Station ID")
 
-# Perform prediction
-y_pred = lgbm.predict(X_test)
+# User inputs
+year_input = st.number_input("Enter Year", min_value=2000, max_value=2100, value=2022)
+station_id = st.text_input("Enter Station ID", value='1')
 
-# Print the accuracy
-print(lgbm.score(X_test, y_test))
+# To encode and then predict
+if st.button('Predict'):
+    if not station_id:
+        st.warning('Please enter the station ID')
+    else:
+        # Prepare the input
+        input_df = pd.DataFrame({'year': [year_input], 'id':[station_id]})
+        input_encoded = pd.get_dummies(input_df, columns=['id'])
 
-print(classification_report(y_test, y_pred))
-print(confusion_matrix(y_test, y_pred))steps = [('scaler', StandardScaler()),
-         ('lgbm', LGBMClassifier())]
+        # Align with model cols
+        for col in model_cols:
+            if col not in input_encoded.columns:
+                input_encoded[col] = 0
+        input_encoded = input_encoded[model_cols]
 
-pipeline = Pipeline(steps)
+        # Predict
+        predicted_pollutants = model.predict(input_encoded)[0]
+        pollutants = ['O2', 'NO3', 'NO2', 'SO4', 'PO4', 'CL']
 
-# Specify the hyperparameter space
-parameters = {
-    'lgbm__learning_rate':[0.03, 0.05, 0.1],
-    'lgbm__objective':['binary'],
-    'lgbm__metric':['binary_logloss'],
-    'lgbm__max_depth':[10],
-    'lgbm__n_estimators':[100, 200, 300]
-}lgbm.get_params()cv.fit# Setup the pipeline
-steps = [('scaler', StandardScaler()),
-         ('lgbm', LGBMClassifier())]
-
-pipeline = Pipeline(steps)
-
-# Specify the hyperparameter space
-parameters = {
-    'lgbm__learning_rate':[0.03, 0.05, 0.1],
-    'lgbm__objective':['binary'],
-    'lgbm__metric':['binary_logloss'],
-    'lgbm__max_depth':[10],
-    'lgbm__n_estimators':[100, 200, 300]
-}
-
-# Create train and test sets
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42)
-
-# Instantiate the GridSearchCV object
-cv = GridSearchCV(pipeline, parameters, cv=3)
-
-# Fit to the training set
-cv.fit(X_train, y_train)
-
-# Predict the labels of the test set
-y_pred = cv.predict(X_test)print(f'Best score : {cv.best_score_}')
-print(f'Best params : {cv.best_params_}')
-
-# Compute and print metrics
-print("Accuracy: {}".format(cv.score(X_test, y_test)))
-print(classification_report(y_test, y_pred))
+        st.subheader(f"Predicted pollutant levels for the station '{station_id}' in {year_input}:")
+        predicted_values = {}
+        for p, val in zip(pollutants, predicted_pollutants):
+            st.write(f'{p}:{val:.2f}')
